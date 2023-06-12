@@ -1,0 +1,123 @@
+function myTzFunction() {
+  var timeStart = new Date();
+  const ss = SpreadsheetApp.openById("1mlV7qFE1mFx_FeKsZNFcBqIBE_oAysqBHP4EP5XN0fQ");
+  const sheet_spravka = ss.getSheetByName('Справочник');
+  sheet_spravka.getRange('A2').setValue('Таймер: ' + '- секунд' );
+  const sheet_res = ss.getSheetByName('Результат');
+  const mera = sheet_spravka.getRange('A3:AZ3').getValues()[0];
+  const timerange = sheet_spravka.getRange('A2').getValues();
+  const data_naz = sheet_spravka.getRange(1,1,1,sheet_spravka.getMaxColumns()).getValues()[0];
+  const data_color = sheet_spravka.getRange(2,1,1,sheet_spravka.getMaxColumns()).getValues()[0];
+  const data = sheet_spravka.getRange(1,1,sheet_spravka.getMaxRows(),1).getValues();
+  var end = 0; // счетчик всех итераций
+  var step_loop =0; // шаг круга
+ 
+  try {
+
+    while ( end <= data.length ) //выполнять пока end не достигнет последнй строки 
+    {
+
+      var loop = 0;
+      var num_images = 4;
+      var splitarray =[1,3,5,7];
+      step_loop = 1;
+      for( z=4 ;z < data_naz.length;z++){ //цикл по строкам Справочник 
+        var data_zna = sheet_spravka.getRange(z,1,1,sheet_spravka.getMaxColumns()).getValues()[0]; // выбираем первую строку из Справочника
+        var znarray = [];// значения
+        var nzarray = []; // названия title
+        var meraarray = []; // мера измерения
+        var colorarray = []; // цвет
+        var lastR = sheet_res.getLastRow();
+        //----------------------------
+        for(i=0; i< (data_naz.length-2);i++) { // запись нужных данных в array
+          var zn = data_zna[i+2];
+          var nz = data_naz[i+2];
+          var mr = mera[i+2]; 
+          var col = data_color[i+2];
+          if (zn == "") continue; { // заполняем array нужными данными
+            znarray.push(zn);
+            nzarray.push(nz);
+            meraarray.push(mr);
+            colorarray.push(col);
+          }
+        }
+        
+        let num = 0;
+        for(i = 0; i < nzarray.length; i++) { // цикл по array с собранными данными
+
+          if(loop == splitarray.length ){ // делаем переход на новую строку, круг
+            loop = 0;
+            step_loop = (sheet_res.getDataRange().getLastRow()+5); // назначение номера для новой строки, круга
+          }
+          sheet_res.getRange(step_loop, splitarray[loop],1,2).mergeAcross().setValue(data_zna[0]).setFontWeight("bold").setHorizontalAlignment("center").setBackgroundColor('orange'); // выводим title
+          
+
+          switch (colorarray[i])  { // выводим значения в зависимости от цвета и без цвета
+          case "зелёный":
+              sheet_res.getRange((i+(step_loop+1)), splitarray[loop]).setValue(nzarray[i]).setBackgroundColor('#b6d7a8');
+              break;
+          case "синий":
+              sheet_res.getRange((i+(step_loop+1)), splitarray[loop]).setValue(nzarray[i]).setBackgroundColor('#a4c2f4');
+              break;
+          case "жёлтый":
+              sheet_res.getRange((i+(step_loop+1)), splitarray[loop]).setValue(nzarray[i]).setBackgroundColor('#ffe599');
+              break;
+          default:
+              sheet_res.getRange((i+(step_loop+1)), splitarray[loop]).setValue(nzarray[i]);
+              break;
+              }
+          var lastR = sheet_res.getLastRow();
+          var range = sheet_res.getRange(1,splitarray[loop], lastR);
+          var values = range.getValues();
+          var lastRowWithData = lastR - values.reverse().findIndex(c => c[0] != ''); // находим последнее значение с столбце
+
+          sheet_res.getRange((i+(step_loop+1)), (splitarray[loop]+1)).setValue(znarray[i] + " " + meraarray[i]);  // выводим значения из array           
+          
+
+
+
+          if (meraarray[i] == 'гр.'){
+            num = num + znarray[i]; // складываем значения, грамм
+            
+            }
+            
+          
+          sheet_res.getRange((step_loop+nzarray.length+1), (splitarray[loop]+1)).setValue(num + ' гр.').setFontWeight("bold"); // выводим сумму значений 
+          //sheet_res.getRange((lastRowWithData+1),splitarray[loop]).setValue("Игото: ").setFontWeight("bold");
+          sheet_res.getRange((step_loop+nzarray.length+1),splitarray[loop]).setValue("Игото: ").setFontWeight("bold");
+          
+        }
+        
+
+        if (splitarray[loop] == 7){ // находим последнее во всей ступени
+          var lastRaw2 = sheet_res.getLastRow();
+          for (var l in splitarray){ // проход по ступени
+            var range = sheet_res.getRange(1,splitarray[l], lastRaw2);
+            var values = range.getValues();
+            var lastRowWithData = lastRaw2 - values.reverse().findIndex(c => c[0] != ''); 
+            sheet_res.getRange(lastRowWithData+1,splitarray[l],((lastRaw2+5)-lastRowWithData),2).merge().setFormula("='Справочник'!$B$" + num_images++); // выводим изображение 
+
+          }
+        } 
+        var cell = sheet_res.getRange(1, splitarray[loop]+1, lastR);
+        cell.setBorder(null, null, null, true, null, null, null, SpreadsheetApp.BorderStyle.SOLID); // устанавливаем границы по бокам
+
+        loop++; // счетчик на новую строку
+        end++; // счетчик всех итераций
+      }  
+    }
+  } catch(error) {
+    console.log(error.message, error.stack); // ошибки
+  //continue;
+  }
+
+  var timeEnd = new Date();
+  var duration = timeEnd - timeStart; // таймер выполнения скрипта
+  sheet_spravka.getRange('A2').setValue('Таймер: '+ Math.floor(duration / 1000) + ' секунд' );
+  
+  }
+
+
+  
+
+
